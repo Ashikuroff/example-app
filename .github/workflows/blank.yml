@@ -32,7 +32,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }} .
+          docker build -t ${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }} 
       - name: Push Docker image
         run: |
           docker push ${{ secrets.IMAGE_NAME }}:${{ secrets.IMAGE_TAG }}  # Removed the extra dot
