@@ -3,8 +3,8 @@ FROM python:3.7.3-alpine3.9 as base
 RUN mkdir /work/
 WORKDIR /work/
 
-COPY ./argo/example-app/src/requirements.txt /work/requirements.txt
-RUN pip install -r requirements.txt
+COPY ./requirements.txt /work/requirements.txt
+RUN pip install -r /requirements.txt
 
 COPY ./src/ /work/
 ENV FLASK_APP=server.py
