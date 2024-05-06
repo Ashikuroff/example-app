@@ -1,11 +1,11 @@
-name: Build and Push Docker Image (Stages and Variab
+name: Build and Push Docker Image (Improved)
 
 on:
   push:
     branches: [ main ]  # Replace with your desired branch(es)
 
 jobs:
-  test:  # Test job
+  test:  # Optional test job
     runs-on: ubuntu-latest  # Or a specific runner you prefer
     steps:
       - uses: actions/checkout@v3  # Checkout code from your repository
@@ -36,10 +36,9 @@ jobs:
         run: |
           docker build -t $IMAGE_NAME:$IMAGE_TAG .
       - name: Push Docker image (optional)
-        if: secrets.IMAGE_NAME && secrets.IMAGE_TAG  # Check for secrets
+        if: secrets.IMAGE_NAME && secrets.DOCKER_PASSWORD  # Check for secrets
         env:  # Use environment variables
           IMAGE_NAME: ashik9001/demo-app  # Your image name (replace)
           IMAGE_TAG: python-app-2.0.0  # Your image tag (replace)
         run: |
           docker push $IMAGE_NAME:$IMAGE_TAG
-
