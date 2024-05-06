@@ -1,44 +1,33 @@
-name: Build and Push Docker Image (Improved)
+name: Publish Docker image
 
 on:
   push:
-    branches: [ main ]  # Replace with your desired branch(es)
+    branches: ['main','staging','test']
 
 jobs:
-  test:  # Optional test job
-    runs-on: ubuntu-latest  # Or a specific runner you prefer
+  push_to_registry:
+    name: Push Docker image to Docker Hub
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3  # Checkout code from your repository
-      - name: Install dependencies (if needed)
-        run: |  # Adjust if you have dependencies
-          # Example: Install Python dependencies
-          sudo apt update && sudo apt install make
-      - name: Run tests
-        run: make test  # Or your specific test command
-
-  build-and-push:  # Build and push image job
-    runs-on: ubuntu-latest  # Or a specific runner you prefer
-    services:
-      dockerd:  # Define a Docker service
-        image: docker:20.10.16-dind  # Use the same Docker version
-        env:
-          DOCKER_TLS_CERTDIR: /certs  # Set environment variable
-    steps:
-      - uses: actions/checkout@v3  # Checkout code from your repository
-      - name: Login to Docker registry (optional)  # Conditional login
-        if: secrets.DOCKER_USERNAME && secrets.DOCKER_PASSWORD  # Check for secrets
-        run: |
-          echo "${{ secrets.DOCKER_USERNAME }}" | docker login -u - --password-stdin
-      - name: Build Docker image
-        env:  # Use environment variables
-          IMAGE_NAME: ashik9001/demo-app  # Your image name (replace)
-          IMAGE_TAG: python-app-2.0.0  # Your image tag (replace)
-        run: |
-          docker build -t $IMAGE_NAME:$IMAGE_TAG .
-      - name: Push Docker image (optional)
-        if: secrets.IMAGE_NAME && secrets.DOCKER_PASSWORD  # Check for secrets
-        env:  # Use environment variables
-          IMAGE_NAME: ashik9001/demo-app  # Your image name (replace)
-          IMAGE_TAG: python-app-2.0.0  # Your image tag (replace)
-        run: |
-          docker push $IMAGE_NAME:$IMAGE_TAG
+      - name: Check out the repo
+        uses: actions/checkout@v3
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ashik9001/testapp
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
