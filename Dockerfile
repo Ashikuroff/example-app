@@ -17,5 +17,5 @@ COPY . .
 EXPOSE 8501
 
 # Entrypoint command (replace with your main script name)
-CMD ["run", "app.py"]  # Replace "main.py" with your actual main script name
+CMD ["streamlit","run", "app.py"]  # Replace "main.py" with your actual main script name
 
