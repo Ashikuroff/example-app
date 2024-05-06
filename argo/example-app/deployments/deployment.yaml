@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: example-app
-        image: ashik9001/testapp-v.0.1:main
+        image: ashik9001/example-python-app:main
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
