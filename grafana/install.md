@@ -19,7 +19,7 @@
 
 # how to get admin password for grafana
 
-' kubectl get secret --namespace default grafana -o jsonpath='{.data.admin-password}' '
+kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
 
 # add promethues as data source
 
