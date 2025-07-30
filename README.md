@@ -1,10 +1,46 @@
-# we have local kind k8s cluster
-1. created local kind k8s cluster (One control plane,2 worker node)
-2. Deployed ArgoCD gitops tools for application deployment in k8s
-3. create CI/CD pipeline to build docker image and push to docker hub
-4. created sample example-app and deployed it to k8s cluster via ArgoCD
-5. Since Gitops tools ArgoCD is pull model tools if any changes on code on github on deployment or anyother files, argocd will sync
-   automatically and re-deploy in k8s cluster
+# Example App on Kubernetes with ArgoCD GitOps
 
-6. All details and code can be found here
-     https://github.com/Ashikuroff/example-app
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Features](#features)
+4. [Prerequisites](#prerequisites)
+5. [Setup & Deployment](#setup--deployment)
+6. [CI/CD & GitOps Flow](#cicd--gitops-flow)
+7. [Repository](#repository)
+
+## Overview
+This project demonstrates deploying a sample application to a local Kubernetes cluster using Kind, with GitOps managed by ArgoCD. The CI/CD pipeline builds Docker images and pushes them to Docker Hub, enabling automated deployments via ArgoCD.
+
+## Architecture
+![Architecture Diagram](stateful_architecture.png)
+*If the diagram is missing, please add your architecture image as `stateful_architecture.png` in the project root.*
+
+## Features
+- Local Kind Kubernetes cluster (1 control plane, 2 worker nodes)
+- ArgoCD for GitOps-based application deployment
+- CI/CD pipeline for Docker image build and push
+- Automated redeployment on code changes via ArgoCD sync
+
+## Prerequisites
+- Docker
+- Kind
+- kubectl
+- ArgoCD
+
+## Setup & Deployment
+1. **Create Kind Cluster**
+   - Set up a local Kubernetes cluster with Kind.
+2. **Install ArgoCD**
+   - Deploy ArgoCD to the cluster for GitOps management.
+3. **CI/CD Pipeline**
+   - Build Docker images and push to Docker Hub.
+4. **Deploy Example App**
+   - Use ArgoCD to deploy the sample app from the repository.
+
+## CI/CD & GitOps Flow
+- Any changes pushed to GitHub (application or deployment files) are automatically synced and redeployed by ArgoCD.
+
+## Repository
+All code and configuration details can be found at:
+[https://github.com/Ashikuroff/example-app](https://github.com/Ashikuroff/example-app)
