@@ -13,8 +13,20 @@
 This project demonstrates deploying a sample application to a local Kubernetes cluster using Kind, with GitOps managed by ArgoCD. The CI/CD pipeline builds Docker images and pushes them to Docker Hub, enabling automated deployments via ArgoCD.
 
 ## Architecture
-![Architecture Diagram](stateful_architecture.png)
-*If the diagram is missing, please add your architecture image as `stateful_architecture.png` in the project root.*
+
+```mermaid
+flowchart TD
+    A[Developer] -->|Push Code| B[GitHub Repository]
+    B -->|Trigger CI/CD| C[CI/CD Pipeline]
+    C -->|Build & Push Image| D[Docker Hub]
+    B -->|ArgoCD Monitors Repo| E[ArgoCD]
+    E -->|Sync & Deploy| F[Kind Kubernetes Cluster]
+    F -->|Runs| G[Example App]
+    E -->|Status & Rollback| F
+    C -->|Notify| E
+```
+
+*The diagram above illustrates the automated flow from code commit to deployment using GitOps and CI/CD.*
 
 ## Features
 - Local Kind Kubernetes cluster (1 control plane, 2 worker nodes)
