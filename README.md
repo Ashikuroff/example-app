@@ -42,13 +42,27 @@ flowchart TD
 
 ## Setup & Deployment
 1. **Create Kind Cluster**
-   - Set up a local Kubernetes cluster with Kind.
+   - Set up a local Kubernetes cluster with Kind using:
+     ```bash
+     kind create cluster --config kind-config.yaml
+     ```
 2. **Install ArgoCD**
-   - Deploy ArgoCD to the cluster for GitOps management.
+   - Deploy ArgoCD to the cluster:
+     ```bash
+     kubectl create namespace argocd
+     kubectl apply -n argocd -f argo/argo-cd/install.yaml
+     ```
 3. **CI/CD Pipeline**
-   - Build Docker images and push to Docker Hub.
+   - Build Docker images and push to Docker Hub:
+     ```bash
+     docker build -t <your-dockerhub-username>/example-app:1.0.0 .
+     docker push <your-dockerhub-username>/example-app:1.0.0
+     ```
 4. **Deploy Example App**
-   - Use ArgoCD to deploy the sample app from the repository.
+   - Use ArgoCD to deploy the sample app:
+     ```bash
+     kubectl apply -f argo/argo-cd/app.yaml
+     ```
 
 ## CI/CD & GitOps Flow
 - Any changes pushed to GitHub (application or deployment files) are automatically synced and redeployed by ArgoCD.
