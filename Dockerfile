@@ -4,7 +4,7 @@ RUN mkdir /work/
 WORKDIR /work/
 
 # Create non-root user and group first
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
 # Copy requirements and install dependencies
 COPY ./src/requirements.txt /work/requirements.txt
