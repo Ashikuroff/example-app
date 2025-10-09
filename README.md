@@ -46,14 +46,10 @@ flowchart TD
 - Monitoring stack with Prometheus and Grafana
 
 ## Prerequisites
-
-Before you begin, ensure you have the following tools installed on your system:
-
-- **Docker:** A containerization platform. [Installation Guide](https://docs.docker.com/engine/install/)
-- **Kind:** A tool for running local Kubernetes clusters using Docker. [Quick Start Guide](https://kind.sigs.k8s.io/docs/user/quick-start/)
-- **kubectl:** The Kubernetes command-line tool. [Installation Guide](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-- **Argo CD CLI:** The command-line interface for Argo CD. [Installation Guide](https://argo-cd.readthedocs.io/en/stable/cli_installation/)
-- **Helm:** The package manager for Kubernetes. [Installation Guide](https://helm.sh/docs/intro/install/)
+- Docker
+- Kind
+- kubectl
+- ArgoCD
 
 ## Project Structure
 
