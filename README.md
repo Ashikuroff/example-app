@@ -239,6 +239,59 @@ Access Grafana: `http://localhost:3000`
 - Username: `admin`
 - Password: (retrieve with `kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo`)
 
+## Development
+
+This repository includes several convenience scripts and a Makefile to speed local development and validation:
+
+- `scripts/setup.sh` — create a Python virtualenv at `.venv` and install dependencies from `src/requirements.txt` and `requirements-test.txt`.
+- `scripts/test.sh` — run the test suite (`pytest`) with optional `--coverage` and `--lint` flags.
+- `scripts/server.sh` — start the Flask application locally (`FLASK_PORT`, `FLASK_DEBUG` controlled via flags/env).
+- `scripts/preflight.sh` — wrapper to run the Azure Deployment Preflight diagnostic (`.github/skills/azure-deployment-preflight/preflight.py`). Pass `--execute` to run `bicep`/`az` commands (requires CLIs + auth).
+- `Makefile` — shortcuts for common tasks: `make setup`, `make test`, `make server`, `make preflight`, etc.
+
+Example usage:
+
+```bash
+# prepare environment
+./scripts/setup.sh
+
+# run tests
+./scripts/test.sh
+
+# start dev server
+./scripts/server.sh --port 5000 --debug
+
+# run preflight (dry-run)
+./scripts/preflight.sh --output preflight-report.md
+```
+
+## Preflight Validation
+
+We added an Azure Deployment Preflight skill to help validate Bicep deployments before applying changes to Azure. Key points:
+
+- Script: `.github/skills/azure-deployment-preflight/preflight.py`
+- README: `.github/skills/azure-deployment-preflight/README.md`
+- What it does: detects `azure.yaml` (azd projects), finds `.bicep` files and parameter files, checks for `az`, `azd`, and `bicep` CLIs, runs `bicep build` (dry-run) and generates a Markdown `preflight-report.md` describing issues and suggested remediation. With `--execute` it will attempt `az ... what-if` commands (requires auth and correct parameters).
+
+Replace placeholder values (resource group, location) in the generated what-if commands before executing in CI or production.
+
+## CI/CD Updates
+
+The GitHub Actions workflows were updated to use supported action versions and modern Docker actions. Highlights:
+
+- `actions/checkout@v4`
+- `actions/setup-python@v5`
+- `actions/upload-artifact@v4`
+- `docker/setup-buildx-action@v3` (stable)
+- `docker/login-action@v3`
+- `docker/build-push-action@v6`
+
+If your org uses pinned action SHAs instead of tags, consider updating the workflows to pin to a specific SHA for each action.
+
+---
+
+For any additional tooling or CI integration (e.g., automatically running the preflight in a PR), I can add a workflow example — tell me where you'd like it integrated.
+
 **Add Prometheus Data Source:**
 1. Go to Configuration → Data Sources
 2. Click "Add data source" → Select "Prometheus"
