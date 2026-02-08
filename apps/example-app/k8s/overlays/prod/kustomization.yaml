@@ -7,23 +7,18 @@ resources:
 namespace: example-app
 
 labels:
-- pairs:
+- includeSelectors: true
+  pairs:
     environment: prod
-  includeSelectors: true
 
 namePrefix: prod-
 
 replicas:
-- name: example-app
-  count: 3
+- count: 3
+  name: example-app
 
 patches:
-- target:
-    group: apps
-    version: v1
-    kind: Deployment
-    name: example-app
-  patch: |-
+- patch: |-
     - op: replace
       path: /spec/template/spec/containers/0/resources/requests/memory
       value: 256Mi
@@ -36,14 +31,20 @@ patches:
     - op: replace
       path: /spec/template/spec/containers/0/resources/limits/cpu
       value: 1000m
+  target:
+    group: apps
+    kind: Deployment
+    name: example-app
+    version: v1
 
 configMapGenerator:
-- name: example-config
-  behavior: merge
+- behavior: merge
   literals:
   - flask_env=production
   - log_level=WARNING
+  name: example-config
 
 images:
 - name: ashik9001/demo-app
-  newTag: v1.0.0
+  newName: docker.io/ashik9001/example-app
+  newTag: main
