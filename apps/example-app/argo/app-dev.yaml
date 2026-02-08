@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: example-app-dev
+  namespace: argocd
+  annotations:
+    environment: development
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Ashikuroff/example-app.git
+    targetRevision: HEAD
+    path: apps/example-app/k8s/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: example-app
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+  revisionHistoryLimit: 10

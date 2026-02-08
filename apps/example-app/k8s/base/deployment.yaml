@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-app
+  labels:
+    app: example-app
+spec:
+  selector:
+    matchLabels:
+      app: example-app
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: example-app
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5000"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: example-app
+        image: ashik9001/demo-app:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 5000
+          protocol: TCP
+        env:
+        - name: FLASK_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: example-config
+              key: flask_env
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: example-config
+              key: log_level
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+            httpHeaders:
+            - name: X-Health-Check
+              value: liveness
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+            httpHeaders:
+            - name: X-Health-Check
+              value: readiness
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 2
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "250m"
+        volumeMounts:
+        - name: secret-volume
+          mountPath: /secrets/
+          readOnly: true
+        - name: config-volume
+          mountPath: /configs/
+          readOnly: true
+      volumes:
+      - name: secret-volume
+        secret:
+          secretName: example-app-secret
+          defaultMode: 0400
+      - name: config-volume
+        configMap:
+          name: example-config
+          defaultMode: 0444

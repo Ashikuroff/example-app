@@ -115,7 +115,9 @@ jobs:
     needs: [test, lint, build]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
     permissions:
-      contents: read
+      contents: write
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -148,6 +150,43 @@ jobs:
           push: true
           target: prod
           tags: ${{ steps.meta.outputs.tags }}
+      
+      - name: Determine target environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "target=prod" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
+            echo "target=staging" >> $GITHUB_OUTPUT
+          else
+            echo "target=dev" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Set up Kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+      
+      - name: Update image tag in Kustomize
+        run: |
+          cd apps/example-app/k8s/overlays/${{ steps.env.outputs.target }}
+          kustomize edit set image ashik9001/demo-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          cat kustomization.yaml
+      
+      - name: Commit and push updated manifests
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          
+          git add apps/example-app/k8s/overlays/
+          
+          # Only commit if there are changes
+          if ! git diff --cached --exit-code --quiet; then
+            git commit -m "chore: update ${{ steps.env.outputs.target }} image tag to ${{ steps.meta.outputs.version }}"
+            git push origin ${{ github.ref_name }}
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

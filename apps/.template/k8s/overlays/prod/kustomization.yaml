@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+- ../../base
+
+namespace: {NAMESPACE}
+
+commonLabels:
+  environment: prod
+
+namePrefix: prod-
+
+replicas:
+- name: {APP_NAME}
+  count: 3
+
+patchesStrategicMerge:
+- deployment-patch.yaml
+
+configMapGenerator:
+- name: {APP_NAME}-config
+  behavior: merge
+  literals:
+  - flask_env=production
+  - log_level=WARNING
+
+images:
+- name: {REGISTRY_IMAGE}
+  newTag: v1.0.0
