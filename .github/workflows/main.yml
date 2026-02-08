@@ -34,6 +34,23 @@ jobs:
           pip install -r src/requirements.txt
           pip install -r requirements-test.txt
       
+      - name: Start Flask app for integration tests
+        run: |
+          echo "Starting Flask app in background"
+          export FLASK_APP=src/server.py
+          export FLASK_ENV=development
+          # run the app in background and log output
+          python src/server.py > server.log 2>&1 &
+          # wait for health endpoint
+          for i in $(seq 1 15); do
+            if curl -sSf http://localhost:5000/health >/dev/null 2>&1; then
+              echo "Service ready"
+              break
+            fi
+            echo "Waiting for service... ($i)"
+            sleep 1
+          done
+
       - name: Run tests with pytest
         run: pytest test/ -v --tb=short
         env:
