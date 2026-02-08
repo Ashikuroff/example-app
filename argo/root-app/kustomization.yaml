@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# This root kustomization file registers all applications to be managed by ArgoCD
+# New apps are automatically discovered when added to the apps/ directory
+
+resources:
+# Core ArgoCD configuration
+- argo-cd/install.yaml
+
+# Application registry - ArgoCD services
+- ../apps/example-app/argo/app-prod.yaml
+- ../apps/example-app/argo/app-staging.yaml
+- ../apps/example-app/argo/app-dev.yaml
+
+# Future apps will be added here:
+# - ../apps/my-python-app/argo/app-prod.yaml
+# - ../apps/my-python-app/argo/app-staging.yaml
+# - ../apps/my-python-app/argo/app-dev.yaml

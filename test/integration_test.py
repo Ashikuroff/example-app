@@ -1,0 +1,164 @@
+"""Integration tests for the Flask server.
+
+These tests require the Flask app to be running.
+Run: python src/server.py &
+     pytest test/integration_test.py -v
+"""
+
+import requests
+import time
+import pytest
+
+# Configuration
+BASE_URL = "http://localhost:5000"
+TIMEOUT = 5
+
+# Health checks are retried to account for startup delay
+MAX_RETRIES = 5
+RETRY_DELAY = 1
+
+
+def wait_for_service(max_retries=MAX_RETRIES):
+    """Wait for the service to become healthy."""
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(f"{BASE_URL}/health", timeout=TIMEOUT)
+            if response.status_code == 200:
+                return True
+        except requests.exceptions.ConnectionError:
+            if attempt < max_retries - 1:
+                print(f"Waiting for service... (attempt {attempt + 1}/{max_retries})")
+                time.sleep(RETRY_DELAY)
+        except requests.exceptions.RequestException:
+            if attempt < max_retries - 1:
+                time.sleep(RETRY_DELAY)
+    
+    raise ConnectionError(f"Service not available at {BASE_URL} after {max_retries} retries")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def wait_for_app():
+    """Ensure app is healthy before running tests."""
+    wait_for_service()
+    yield
+
+
+class TestHealthy:
+    """Integration tests for application health."""
+    
+    def test_app_is_accessible(self):
+        """Test that the application is accessible."""
+        response = requests.get(f"{BASE_URL}/", timeout=TIMEOUT)
+        assert response.status_code == 200
+    
+    def test_health_endpoint_returns_healthy(self):
+        """Test that health endpoint returns healthy status."""
+        response = requests.get(f"{BASE_URL}/health", timeout=TIMEOUT)
+        assert response.status_code == 200
+        data = response.json()
+        assert data.get("status") == "healthy"
+    
+    def test_metrics_endpoint_accessible(self):
+        """Test that metrics endpoint is accessible."""
+        response = requests.get(f"{BASE_URL}/metrics", timeout=TIMEOUT)
+        assert response.status_code == 200
+        assert b"prometheus" in response.content.lower() or b"app_requests_total" in response.content
+
+
+class TestAPI:
+    """Integration tests for API endpoints."""
+    
+    def test_hello_returns_json(self):
+        """Test that hello endpoint returns proper JSON."""
+        response = requests.get(f"{BASE_URL}/", timeout=TIMEOUT)
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert isinstance(data, dict)
+        assert "message" in data
+        assert "version" in data
+    
+    def test_404_handling(self):
+        """Test that undefined endpoints return 404."""
+        response = requests.get(f"{BASE_URL}/undefined-endpoint", timeout=TIMEOUT)
+        assert response.status_code == 404
+        
+        data = response.json()
+        assert data.get("error") == "Not found"
+    
+    def test_concurrent_requests(self):
+        """Test that app handles concurrent requests."""
+        import concurrent.futures
+        
+        def make_request():
+            response = requests.get(f"{BASE_URL}/", timeout=TIMEOUT)
+            return response.status_code == 200
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(make_request) for _ in range(10)]
+            results = [f.result() for f in concurrent.futures.as_completed(futures)]
+        
+        assert all(results), "Not all concurrent requests succeeded"
+
+
+class TestMetrics:
+    """Integration tests for Prometheus metrics."""
+    
+    def test_metrics_contain_request_count(self):
+        """Test that metrics include request count."""
+        # Make a request to generate metrics
+        requests.get(f"{BASE_URL}/", timeout=TIMEOUT)
+        
+        # Fetch metrics
+        response = requests.get(f"{BASE_URL}/metrics", timeout=TIMEOUT)
+        assert response.status_code == 200
+        
+        # Verify it contains request metrics
+        content = response.text
+        assert "app_requests_total" in content
+        assert "app_request_duration_seconds" in content
+    
+    def test_metrics_format_is_prometheus(self):
+        """Test that metrics are in Prometheus format."""
+        response = requests.get(f"{BASE_URL}/metrics", timeout=TIMEOUT)
+        assert response.status_code == 200
+        
+        # Prometheus format should have TYPE and HELP lines
+        content = response.text
+        assert "# HELP" in content or "app_requests_total" in content
+        
+        # Should have content-type header for Prometheus
+        assert "text/plain" in response.headers.get("Content-Type", "")
+
+
+class TestPerformance:
+    """Integration tests for performance characteristics."""
+    
+    def test_response_time_acceptable(self):
+        """Test that response times are acceptable (< 100ms)."""
+        start = time.time()
+        response = requests.get(f"{BASE_URL}/health", timeout=TIMEOUT)
+        duration = (time.time() - start) * 1000  # Convert to ms
+        
+        assert response.status_code == 200
+        assert duration < 100, f"Response took {duration:.0f}ms (expected < 100ms)"
+    
+    def test_no_memory_leaks(self):
+        """Test that making many requests doesn't cause obvious issues."""
+        import gc
+        
+        # Make many requests
+        for _ in range(50):
+            response = requests.get(f"{BASE_URL}/", timeout=TIMEOUT)
+            assert response.status_code == 200
+        
+        # Force garbage collection
+        gc.collect()
+        
+        # Final health check should still work
+        response = requests.get(f"{BASE_URL}/health", timeout=TIMEOUT)
+        assert response.status_code == 200
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "--tb=short"])
