@@ -1,46 +1,56 @@
 """Integration tests for the Flask server.
 
-These tests require the Flask app to be running.
-Run: python src/server.py &
-     pytest test/integration_test.py -v
+These tests start the Flask app in a background server thread using
+Werkzeug's make_server so tests can reliably hit http://localhost:5000
+without depending on external background processes started by CI steps.
 """
 
-import requests
 import time
 import pytest
+import requests
+from threading import Thread
+from werkzeug.serving import make_server
 
-# Configuration
-BASE_URL = "http://localhost:5000"
-TIMEOUT = 5
-
-# Health checks are retried to account for startup delay
-MAX_RETRIES = 5
-RETRY_DELAY = 1
+# Import the Flask app
+from src.server import app
 
 
-def wait_for_service(max_retries=MAX_RETRIES):
-    """Wait for the service to become healthy."""
-    for attempt in range(max_retries):
-        try:
-            response = requests.get(f"{BASE_URL}/health", timeout=TIMEOUT)
-            if response.status_code == 200:
-                return True
-        except requests.exceptions.ConnectionError:
-            if attempt < max_retries - 1:
-                print(f"Waiting for service... (attempt {attempt + 1}/{max_retries})")
-                time.sleep(RETRY_DELAY)
-        except requests.exceptions.RequestException:
-            if attempt < max_retries - 1:
-                time.sleep(RETRY_DELAY)
-    
-    raise ConnectionError(f"Service not available at {BASE_URL} after {max_retries} retries")
+BASE_URL = "http://127.0.0.1:5000"
+
+
+class ServerThread(Thread):
+    def __init__(self, app, host="127.0.0.1", port=5000):
+        Thread.__init__(self)
+        self.server = make_server(host, port, app)
+        self.ctx = app.app_context()
+        self.ctx.push()
+        self.daemon = True
+
+    def run(self):
+        self.server.serve_forever()
+
+    def shutdown(self):
+        self.server.shutdown()
 
 
 @pytest.fixture(scope="session", autouse=True)
-def wait_for_app():
-    """Ensure app is healthy before running tests."""
-    wait_for_service()
+def start_flask_server():
+    """Start the Flask app in a background thread for the duration of the test session."""
+    server = ServerThread(app)
+    server.start()
+
+    # Wait until the health endpoint responds
+    for _ in range(30):
+        try:
+            r = requests.get(f"{BASE_URL}/health", timeout=1)
+            if r.status_code == 200:
+                break
+        except requests.exceptions.RequestException:
+            time.sleep(0.5)
+
     yield
+
+    server.shutdown()
 
 
 class TestHealthy:
